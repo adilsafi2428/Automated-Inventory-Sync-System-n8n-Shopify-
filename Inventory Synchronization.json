@@ -1,0 +1,419 @@
+{
+  "name": "Inventory Synchronization",
+  "nodes": [
+    {
+      "parameters": {
+        "authentication": "accessToken",
+        "resource": "product",
+        "operation": "getAll",
+        "returnAll": "={{ false }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.shopify",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        -416
+      ],
+      "id": "",
+      "name": "Get many products",
+      "credentials": {
+        "shopifyAccessTokenApi": {
+          "id": "vqMnrFn4zzhnmgmC",
+          "name": "Shopify Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -976,
+        -416
+      ],
+      "id": "079a2a41-42cc-43cd-bca5-6a64c406f340",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://adil-safikhan.myshopify.com/admin/api/2025-10/locations.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": ""
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -720,
+        -416
+      ],
+      "id": "",
+      "name": "Only To Get Location ID"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Function that runs once for all incoming items (products)\nconst outputItems = [];\n\n// 1. Get the REAL location ID from the very first HTTP node's output:\n// Assumes the HTTP node is the second node in the flow (index 0).\nconst locationId = $item(0).$node['Only To Get Location ID'].json.locations[0].id; \n\nfor (const productItem of $input.all()) {\n    const product = productItem.json;\n\n    // Iterate over the nested 'variants' array, creating a new item for each\n    for (const variant of product.variants) {\n        \n        outputItems.push({\n            json: {\n                // CORE IDENTIFIERS\n                VariantID: variant.id, \n                InventoryItemID: variant.inventory_item_id,\n                ProductID: product.id, \n                \n                // LOCATION & STOCK\n                LocationID: locationId, // <--- Now uses the dynamically fetched ID\n                ShopifyQuantity: variant.inventory_quantity,\n                \n                // TITLES & AUDIT\n                ProductTitle: product.title, \n                VariantTitle: variant.title, \n                LastSynced: (new Date()).toISOString()\n            }\n        });\n    }\n}\n\nreturn outputItems;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        -416
+      ],
+      "id": "",
+      "name": "Structured the Data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cc09ea51-be3a-41c7-b6d1-c908df104c3c",
+              "leftValue": "={{ $json.ShopifyQuantity }}",
+              "rightValue": 10,
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -48,
+        -416
+      ],
+      "id": "666aa873-9cdb-4b65-95b4-0c19455b972e",
+      "name": "Low Stock Checker"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        624,
+        -416
+      ],
+      "id": "7f13eb16-2b9e-4cc1-a10d-9b1342d79786",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Accesses the original data that came into the Gmail node\nconst originalItem = $item(0).$node['Low Stock Checker'].json;\n\n// Creates a new item using the original data and outputs it\nreturn [{ json: originalItem }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        -480
+      ],
+      "id": "32c190e1-e0c2-4e38-afc6-dbc150faa5a5",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "sendTo": "adilsafi2828@gmail.com",
+        "subject": "=Low Stock Alert! Action Required for: {{ $json.ProductTitle }}",
+        "emailType": "text",
+        "message": "=Hello Inventory Team,\nThis is an automated low stock alert for the following product variant:\nProduct Name: {{ $json.ProductTitle }}\nVariant:  {{ $json.VariantTitle }}    \n(Variant ID): {{ $json.VariantID }}\nCurrent Stock: {{ $json.ShopifyQuantity }}\n  The stock level is at or below the defined threshold (10 units).  Please review the current stock levels and initiate a restock order immediately to prevent stockouts.\n**Direct Link to Inventory Management: https://admin.shopify.com/store/adil-safikhan/products/inventory?location_id=83277578392&selectedColumns=VARIANT_NAME%2CSKU%2CUNAVAILABLE_QUANTITY%2CCOMMITTED_QUANTITY%2CAVAILABLE_QUANTITY%2CON_HAND_QUANTITY%2CINCOMING_QUANTITY \n This notification was sent on {{ $json.LastSynced }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        176,
+        -480
+      ],
+      "id": "56a72aa8-38c2-4a90-a44b-b29b3ba1d7d5",
+      "name": "Low Stock Alert!",
+      "webhookId": "",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MJ6qRwqO4vnut0gF",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "InventoryMaster",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hpkSSG4Co6wYQ1bZlLd1gLH2Y7RmAGup38bYS4W4KE4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hpkSSG4Co6wYQ1bZlLd1gLH2Y7RmAGup38bYS4W4KE4/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "VariantID": "={{ $json.VariantID }}",
+            "InventoryItemID": "={{ $json.InventoryItemID }}",
+            "ProductID": "={{ $json.ProductID }}",
+            "LocationID": "={{ $json.LocationID }}",
+            "ShopifyQuantity": "={{ $json.ShopifyQuantity }}",
+            "ProductTitle": "={{ $json.ProductTitle }}",
+            "VariantTitle": "={{ $json.VariantTitle }}",
+            "LastSynced": "={{ $json.LastSynced }}"
+          },
+          "matchingColumns": [
+            "VariantID"
+          ],
+          "schema": [
+            {
+              "id": "VariantID",
+              "displayName": "VariantID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "InventoryItemID",
+              "displayName": "InventoryItemID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ProductID",
+              "displayName": "ProductID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "LocationID",
+              "displayName": "LocationID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ShopifyQuantity",
+              "displayName": "ShopifyQuantity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ProductTitle",
+              "displayName": "ProductTitle",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VariantTitle",
+              "displayName": "VariantTitle",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "LastSynced",
+              "displayName": "LastSynced",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "LastAPISync",
+              "displayName": "LastAPISync",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        848,
+        -416
+      ],
+      "id": "d3b92371-62ff-4e4b-b334-f4cb72343c80",
+      "name": "Store the products",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get many products": {
+      "main": [
+        [
+          {
+            "node": "Structured the Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Only To Get Location ID": {
+      "main": [
+        [
+          {
+            "node": "Get many products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured the Data": {
+      "main": [
+        [
+          {
+            "node": "Low Stock Checker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Low Stock Checker": {
+      "main": [
+        [
+          {
+            "node": "Low Stock Alert!",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Store the products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Low Stock Alert!": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Only To Get Location ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "Uo8DGHcrXUsb3cw3"
+  },
+  "versionId": "38622d05-b8cc-43ec-8ece-4cede7939007",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c3e7bcce7ca4910640e953a04f7fc9c240ff34f7a76426307914d8f566bcce03"
+  },
+  "id": "WFUnno4d10SfY8W4",
+  "tags": []
+}

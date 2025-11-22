@@ -1,0 +1,449 @@
+{
+  "name": "Inventory Update Trigger",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "InventoryMaster",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hpkSSG4Co6wYQ1bZlLd1gLH2Y7RmAGup38bYS4W4KE4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hpkSSG4Co6wYQ1bZlLd1gLH2Y7RmAGup38bYS4W4KE4/edit#gid=0"
+        },
+        "event": "rowUpdate",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        32
+      ],
+      "id": "",
+      "name": "Tragger when change Happened",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "XBGLuEpc1TZ72NPn",
+          "name": "Google Sheets Trigger account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://adil-safikhan.myshopify.com/admin/api/2025-10/inventory_levels/set.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": ""
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"location_id\":{{ $('Tragger when change Happened').item.json.LocationID }} ,\n  \"inventory_item_id\":{{ $('Tragger when change Happened').item.json.InventoryItemID }} ,\n  \"available\": {{ parseInt($json.ShopifyQuantity) || 0 }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        672,
+        224
+      ],
+      "id": "",
+      "name": "Update Inventory by Change in Sheet"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1hpkSSG4Co6wYQ1bZlLd1gLH2Y7RmAGup38bYS4W4KE4",
+          "mode": "list",
+          "cachedResultName": "InventoryMaster",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hpkSSG4Co6wYQ1bZlLd1gLH2Y7RmAGup38bYS4W4KE4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hpkSSG4Co6wYQ1bZlLd1gLH2Y7RmAGup38bYS4W4KE4/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "VariantID": "={{ $('Tragger when change Happened').item.json.VariantID }}",
+            "InventoryItemID": "={{ $('Tragger when change Happened').item.json.InventoryItemID }}",
+            "LocationID": "={{ $('Tragger when change Happened').item.json.LocationID }}",
+            "ShopifyQuantity": "={{ $('Tragger when change Happened').item.json.ShopifyQuantity }}",
+            "ProductID": "={{ $('Tragger when change Happened').item.json.ProductID }}",
+            "VariantTitle": "={{ $('Tragger when change Happened').item.json.VariantTitle }}",
+            "LastSynced": "={{ $('Tragger when change Happened').item.json.LastSynced }}",
+            "LastAPISync": "={{ (new Date()).toISOString() }}"
+          },
+          "matchingColumns": [
+            "VariantID"
+          ],
+          "schema": [
+            {
+              "id": "VariantID",
+              "displayName": "VariantID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "InventoryItemID",
+              "displayName": "InventoryItemID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "LocationID",
+              "displayName": "LocationID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ShopifyQuantity",
+              "displayName": "ShopifyQuantity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ProductID",
+              "displayName": "ProductID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VariantTitle",
+              "displayName": "VariantTitle",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "LastSynced",
+              "displayName": "LastSynced",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "LastAPISync",
+              "displayName": "LastAPISync",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        896,
+        224
+      ],
+      "id": "",
+      "name": "Synced Updated Row",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PqGuMBZqe924iOQG",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "378ba0ca-8972-4a6a-a679-741ffd0e432f",
+              "leftValue": "={{ $json.ShopifyQuantity }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        224,
+        32
+      ],
+      "id": "8bfef125-67a8-4046-8eea-2e502808d786",
+      "name": "Check for Negative Stock"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "dc941466-62c8-4828-90f3-a597f110541c",
+              "leftValue": "={{ $json.ShopifyQuantity }}",
+              "rightValue": 500,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        128
+      ],
+      "id": "5606c096-df6c-49f4-9c73-0284125e4dca",
+      "name": "Check High Stock Entry"
+    },
+    {
+      "parameters": {
+        "sendTo": "adilsafi2828@gmail.com",
+        "subject": "=URGENT: High Stock Entry Alert for {{ $json.VariantTitle }}",
+        "emailType": "text",
+        "message": "=A quantity of {{ $json.ShopifyQuantity }} was entered in the sheet for {{ $json.VariantTitle }}.\n\nThis is above the safe threshold of 500. Please log in to Shopify and confirm this is correct, or revert the value in the Google Sheet if it was a typo.\n\nVariant ID: {{ $json.VariantID }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        672,
+        32
+      ],
+      "id": "d0855e66-9576-49b1-bee2-ffae51f904b4",
+      "name": "High Stock Entry Alert!",
+      "webhookId": "81314945-785b-4015-8eac-8c0883dd0122",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MJ6qRwqO4vnut0gF",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "adilsafi2828@gmail.com",
+        "subject": "CRITICAL ERROR; Negative Stock Entered for",
+        "emailType": "text",
+        "message": "=A negative Stock Quantity was detected for  the  following item and title Variant Title: {{ $json.VariantTitle }} Variant ID: {{ $json.VariantID }} Quantity Entered:{{ $json.ShopifyQuantity }} Action Taken: Update stopped. Please correct the quantity in the Google Sheet immediately.",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        448,
+        -64
+      ],
+      "id": "7372c47a-aa21-40a2-aa3b-3ea654401f48",
+      "name": "Negative Stock Alert!",
+      "webhookId": "4a11dc30-25ad-42fe-bc91-63f9468f5664",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        528,
+        80
+      ],
+      "typeVersion": 1,
+      "id": "90daf3ef-97f6-4dcb-9af9-347b59992420",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        528,
+        80
+      ],
+      "typeVersion": 1,
+      "id": "",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        528,
+        80
+      ],
+      "typeVersion": 1,
+      "id": "0a0dd896-7fdf-4764-add6-69e2afaf8e36",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        528,
+        80
+      ],
+      "typeVersion": 1,
+      "id": "6e1d71f7-1391-4b0f-9dd5-f425eb66d155",
+      "name": "Sticky Note3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Tragger when change Happened": {
+      "main": [
+        [
+          {
+            "node": "Check for Negative Stock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Inventory by Change in Sheet": {
+      "main": [
+        [
+          {
+            "node": "Synced Updated Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for Negative Stock": {
+      "main": [
+        [
+          {
+            "node": "Negative Stock Alert!",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check High Stock Entry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check High Stock Entry": {
+      "main": [
+        [
+          {
+            "node": "High Stock Entry Alert!",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Inventory by Change in Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d5ba5fb7-d569-4c3b-a245-9e6b75819c72",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c3e7bcce7ca4910640e953a04f7fc9c240ff34f7a76426307914d8f566bcce03"
+  },
+  "id": "jB8PKSMsylwaumWB",
+  "tags": []
+}
